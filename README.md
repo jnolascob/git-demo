@@ -3,4 +3,5 @@ Repositorio de prueba
 
 version: 1.0.0
 
-Author: Jonathan
+Author: Jonathani
+Sample text

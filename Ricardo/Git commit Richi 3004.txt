@@ -1,0 +1,17 @@
+Confirmar y subir un cambio
+
+```jsx
+git add -A
+git commit -m ‘Mi primer commit’
+git push
+```
+
+Subir tus últimos cambios
+
+```jsx
+git push
+```
+
+Bajar últimos cambios
+
+----Cambio rama--

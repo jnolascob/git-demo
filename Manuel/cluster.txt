@@ -1,0 +1,205 @@
+###################################
+# SUMA
+###################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: suma
+  labels:
+    app: suma
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: suma
+  template:
+    metadata:
+      labels:
+        app: suma
+    spec:
+      containers:
+        - name: suma
+          image: us-central1-docker.pkg.dev/uandes-native-1234/uniandes-misw-native-calculadora-app/suma:1.0
+          ports:
+            - containerPort: 4000
+          # Realizar pull siempre a la imagen
+          imagePullPolicy: Always
+
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: calculadora-numeros-suma-config
+spec:
+  healthCheck:
+    checkIntervalSec: 30
+    port: 4000
+    type: HTTP
+    requestPath: /health
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: servicio-suma
+  annotations:
+    cloud.google.com/backend-config: '{"default": "calculadora-numeros-suma-config"}'
+spec:
+  type: NodePort
+  selector:
+    app: suma
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4000
+      nodePort: 31019
+
+---
+###################################
+# MULTIPLICACION
+###################################
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multiplicacion
+  labels:
+    app: multiplicacion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multiplicacion
+  template:
+    metadata:
+      labels:
+        app: multiplicacion
+    spec:
+      containers:
+        - name: multiplicacion
+          image: us-central1-docker.pkg.dev/uandes-native-1234/uniandes-misw-native-calculadora-app/multiplicacion:1.0
+          ports:
+            - containerPort: 4000
+          imagePullPolicy: Always
+
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: calculadora-numeros-multiplicacion-config
+spec:
+  healthCheck:
+    checkIntervalSec: 30
+    port: 4000
+    type: HTTP
+    requestPath: /health
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: servicio-multiplicacion
+  annotations:
+    cloud.google.com/backend-config: '{"default": "calculadora-numeros-multiplicacion-config"}'
+spec:
+  type: NodePort
+  selector:
+    app: multiplicacion
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4000
+      nodePort: 31017
+
+---
+###################################
+# EXPONENCIAL
+###################################
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exponencial
+  labels:
+    app: exponencial
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exponencial
+  template:
+    metadata:
+      labels:
+        app: exponencial
+    spec:
+      containers:
+        - name: exponencial
+          image: us-central1-docker.pkg.dev/uandes-native-1234/uniandes-misw-native-calculadora-app/exponencial:1.0
+          ports:
+            - containerPort: 4000
+          env:
+              - name: MULTIPLICACION_MS
+                value: http://servicio-multiplicacion
+            # Realizar pull siempre a la imagen
+          imagePullPolicy: Always
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: calculadora-numeros-exponencial-config
+spec:
+  healthCheck:
+    checkIntervalSec: 30
+    port: 4000
+    type: HTTP
+    requestPath: /health
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: servicio-exponencial
+  annotations:
+    cloud.google.com/backend-config: '{"default": "calculadora-numeros-exponencial-config"}'
+spec:
+  type: NodePort
+  selector:
+    app: exponencial
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4000
+      nodePort: 31020
+
+###################################
+# INGRESS
+###################################
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-ingress
+  labels:
+    name: gateway-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: /suma
+        backend:
+          service:
+            name: servicio-suma
+            port: 
+              number: 80
+      - pathType: Prefix
+        path: /multiplicar
+        backend:
+          service:
+            name: servicio-multiplicacion
+            port: 
+              number: 80
+      - pathType: Prefix
+        path: /exponencial
+        backend:
+          service:
+            name: servicio-exponencial
+            port: 
+              number: 80
